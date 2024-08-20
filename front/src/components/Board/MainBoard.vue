@@ -1,32 +1,42 @@
-<template>{{totalPosts}}
+<template>
     <div class="d-flex flex-column">
-      <div class="category-buttons">
+      <div class="category-buttons" style="margin:10px">
         <button
           type="button"
           class="btn btn-outline-primary m-2"
           :class="{ active: selectedCategory === key }"
           v-for="(value, key) in categories"
           :key="key"
-          @click="selectCategory(key)">
+          @click="selectCategory(key)"
+          >
           {{ value }}
         </button>
       </div>
-      
-      <BoardList 
-        :posts="posts"
-        :selectedCategory="selectedCategory"
-        :totalPosts="totalPosts"
-        :currentPage="currentPage"
-        :perPage="perPage"
-        @updatePage="updatePage"
-        @updateStatus="setActiveTab"
-      />
+      <!-- 글쓰기 -->
+      <BoardWrite v-if="postting"/>
+      <div v-else> 
+        <!-- 게시판 목록 -->
+        <BoardList 
+          :posts="posts"
+          :selectedCategory="selectedCategory"
+        />
+        <button type="button" class="btn btn-outline-primary m-2" @click="postting=true">글쓰기</button>
+        <!-- 페이징 -->
+        <Pagintion
+          :totalPosts="totalPosts"
+          :currentPage="currentPage"
+          :perPage="perPage"
+          @updatePage="updatePage"
+          />
+      </div>
     </div>
   </template>
   
   <script>
   import axios from 'axios';
   import BoardList from './BoardList.vue';
+  import BoardWrite from './BoardWrite.vue';
+  import Pagintion from '../Pagintion.vue';
   
   export default {
     data() {
@@ -37,6 +47,7 @@
         totalPosts: 0,
         currentPage: 1,
         perPage: 10,
+        postting: false,
       }
     },
     created() {
@@ -105,6 +116,7 @@
       selectCategory(key) {
         this.selectedCategory = key;
         this.currentPage = 1; // Reset to the first page when category changes
+        this.postting = false;
         this.fetchPosts();
       },
       updatePage(page) {
@@ -117,7 +129,9 @@
       }
     },
     components: {
-      BoardList
+      BoardList,
+      BoardWrite,
+      Pagintion,
     }
   }
   </script>
