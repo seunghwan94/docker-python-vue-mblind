@@ -32,7 +32,7 @@
     props: {
       totalPosts: {
         type: Number,
-        default: 0
+        default: 1
       },
       currentPage: {
         type: Number,

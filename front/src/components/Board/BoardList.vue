@@ -1,6 +1,6 @@
 <template>
     <div>
-      <div class="d-flex flex-column">
+      <div class="d-flex flex-column" v-if="posts.length > 0">
         <div 
           class="card border-primary m-3"
           v-for="post in posts"
@@ -21,6 +21,14 @@
                 <p class="text-body-tertiary pe-2 m-0"><i class="bi bi-chat-dots"></i> {{ post.comment_count }}</p>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+      <div v-else>
+        <div class="card border-primary m-3">
+          <div class="card-body p-0">
+            <div class="card-header d-flex justify-content-between" style="height: 32px;"></div>
+            <h5 class="card-title p-4" style="text-align:center;">게시글이 없습니다.</h5>
           </div>
         </div>
       </div>
@@ -62,7 +70,7 @@
   }
   </script>
   
-  <style scoped>
+  <style>
   .card {
     cursor: pointer;
   }

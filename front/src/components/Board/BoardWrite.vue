@@ -35,6 +35,8 @@
       const editorElement = ref(null);
       const title = ref('');
       const category = ref(''); // 새로 추가된 부분
+      const user_id = ref(sessionStorage.getItem('user_id'));  // `setup` 함수 내부에서 정의
+
       onMounted(() => {
         editor.value = new Editor({
           element: editorElement.value,
@@ -56,24 +58,27 @@
         }
       });
       const BoardWrite = () => {
+
         const content = editor.value.getHTML();
         console.log('Category:', category.value); // 새로 추가된 부분
         console.log('Title:', title.value);
         console.log('Content:', content);
-        console.log('user_id:', props.user_id);
+        console.log('user_id:', user_id.value);
+
         if (content && title.value && category.value) {
-              axios.post('http://127.0.0.1:3000/post', {
+              // axios.post(`${this.$BackURL}/boardPostting`, {
+              axios.post(`${props.BackURL}/boardPostting`, {
                   content: content,
                   title: title.value,
                   category: category.value,
-                  user_id: props.user_id
+                  user_id: user_id.value
               }).then(res => {
                   console.log(res.data);
                   if (res.data.status === 'success') {
                     alert('게시글이 작성 되었습니다.')
                     window.location.reload();
                   }else{
-                    alert('post 에러');
+                    alert('postting 에러');
                   }
               }).catch(e => {
                   console.error('에러', e); 
@@ -87,7 +92,7 @@
     },
     props: {
       categories:Object,
-      user_id: String
+      BackURL: String, 
     }
   };
   </script>

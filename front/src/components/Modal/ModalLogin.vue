@@ -121,7 +121,7 @@
       SignUp() {
         if (this.signUpName && this.signUpID && this.signUpPW && this.confirmPW) {
           if (this.signUpPW === this.confirmPW) {
-            axios.post(`${this.$BackURL}/signup`, {
+            axios.post(`${this.$BackURL}/signUp`, {
               signUpID: this.signUpID,
               signUpPW: this.signUpPW,
               signUpName: this.signUpName

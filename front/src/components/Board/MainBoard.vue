@@ -13,21 +13,15 @@
         </button>
       </div>
       <!-- 글쓰기 -->
-      <BoardWrite v-if="postting"/>
+      <BoardWrite v-if="postting" :categories="categories" :BackURL="BackURL"/>
       <div v-else> 
         <!-- 게시판 목록 -->
-        <BoardList 
-          :posts="posts"
-          :selectedCategory="selectedCategory"
-        />
-        <button type="button" class="btn btn-outline-primary m-2" @click="postting=true">글쓰기</button>
+        <BoardList :posts="posts" :selectedCategory="selectedCategory"/>
+        <div class="d-flex justify-content-end">
+          <button type="button" class="btn btn-outline-primary m-2" @click="postting=true">글쓰기</button>
+        </div>
         <!-- 페이징 -->
-        <Pagintion
-          :totalPosts="totalPosts"
-          :currentPage="currentPage"
-          :perPage="perPage"
-          @updatePage="updatePage"
-          />
+        <Pagintion :totalPosts="totalPosts" :currentPage="currentPage" :perPage="perPage" @updatePage="updatePage"/>
       </div>
     </div>
   </template>
@@ -48,6 +42,7 @@
         currentPage: 1,
         perPage: 10,
         postting: false,
+        BackURL: this.$BackURL
       }
     },
     created() {
@@ -67,7 +62,6 @@
     methods: {
       async fetchCategories() {
         try {
-          console.log(`${this.$BackURL}/category`);
           const response = await axios.get(`${this.$BackURL}/category`);
           if (response.data.status === 'success') {
             this.categories = response.data.res.reduce((acc, category) => {
@@ -83,7 +77,7 @@
       },
       async fetchPosts(page = this.currentPage) {
         try {
-          // Fetch posts
+          // api 요청 
           const postsResponse = await axios.get(`${this.$BackURL}/boardList`, {
             params: {
               category_id: this.selectedCategory,
@@ -91,21 +85,27 @@
               per_page: this.perPage
             }
           });
+          // response
           if (postsResponse.data.status === 'success') {
             this.posts = postsResponse.data.res;
           } else {
             console.error('Failed to fetch posts:', postsResponse.data.message);
           }
   
-          // Fetch total posts
+          // total posts
           const totalPostsResponse = await axios.get(`${this.$BackURL}/boardListPage`, {
             params: {
               category_id: this.selectedCategory
             }
           });
-          console.log(totalPostsResponse.data)
+          // response
           if (totalPostsResponse.data.status === 'success') {
-            this.totalPosts = totalPostsResponse.data.res[0].total_posts;
+            if (totalPostsResponse.data.res[0].total_posts == 0){
+              // 데이터가 없는경우
+              this.totalPosts = 1; 
+            }else{
+              this.totalPosts = totalPostsResponse.data.res[0].total_posts;
+            }
           } else {
             console.error('Failed to fetch total posts:', totalPostsResponse.data.message);
           }
@@ -136,12 +136,22 @@
   }
   </script>
   
-  <style scoped>
+  <style>
   .container {
     padding: 20px;
   }
   .category-buttons {
     margin-bottom: 20px;
+  }
+  /* 기본 카드 스타일 */
+  .card.border-primary {
+    transition: background-color 0.3s, box-shadow 0.3s, color 0.3s; /* 배경색, 그림자, 글자색에 대해 transition 설정 */
+  }
+  /* 카드에 마우스 오버 시 효과 */
+  .card.border-primary:hover {
+    background-color: #78C2AD; /* 배경색 변경 */
+    color: white; /* 텍스트 색상 변경 */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* 카드에 그림자 추가 */
   }
   </style>
   

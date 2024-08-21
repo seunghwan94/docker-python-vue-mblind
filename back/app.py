@@ -104,8 +104,8 @@ def login():
         response = {'status': 'error', 'message': 'Invalid ID or password'}
     return jsonify(response)
 
-@app.route('/signup', methods=['POST'])
-def signup():
+@app.route('/signUp', methods=['POST'])
+def signUp():
     data = request.json
     user_id = data.get('signUpID')
     user_pw = data.get('signUpPW')
@@ -127,19 +127,19 @@ def signup():
     
     return jsonify(response)
 
-@app.route('/profileload', methods=['POST'])
-def profileload():
-    data = request.json
-    user_id = data.get('user_id')
+# @app.route('/profileload', methods=['POST'])
+# def profileload():
+#     data = request.json
+#     user_id = data.get('user_id')
 
-    if not user_id :
-        return jsonify({'status': 'error', 'message': 'user_id required'}), 400
+#     if not user_id :
+#         return jsonify({'status': 'error', 'message': 'user_id required'}), 400
 
-    # Check if user ID already exists
-    query = "SELECT * FROM tb_user WHERE user_id = %s"
-    response = tbSelect(query, (user_id,))
+#     # Check if user ID already exists
+#     query = "SELECT * FROM tb_user WHERE user_id = %s"
+#     response = tbSelect(query, (user_id,))
 
-    return jsonify(response)
+#     return jsonify(response)
 
 @app.route('/UploadFile', methods=['POST'])
 def UploadFile():
@@ -223,12 +223,11 @@ def boardList():
     category_id = request.args.get('category_id')
     page = int(request.args.get('page', 1))  # 기본값으로 페이지 1
     per_page = int(request.args.get('per_page', 10))  # 기본값으로 페이지당 10개 게시글
-        
+    
     if not category_id:
         return jsonify({'status': 'error', 'message': 'category_id required'}), 400
-
-    # 페이징을 위한 쿼리
-    offset = (page - 1) * per_page
+    
+    # 기본 쿼리 작성
     query = """
         SELECT
             p.id AS board_id,
@@ -268,10 +267,22 @@ def boardList():
             GROUP BY
                 board_id
         ) comment_counts ON p.id = comment_counts.board_id
-        WHERE p.category_id = %s
-        LIMIT %s OFFSET %s
     """
-    posts = tbSelect(query, (category_id, per_page, offset))
+    
+    params = []
+    
+    # category_id가 있을 경우에만 WHERE 절 추가
+    if category_id != '0':
+        query += " WHERE p.category_id = %s"
+        params.append(category_id)
+    
+    # 페이징을 위한 LIMIT 및 OFFSET 추가
+    query += " LIMIT %s OFFSET %s"
+    offset = (page - 1) * per_page
+    params.extend([per_page, offset])
+    
+    # tbSelect 함수 호출
+    posts = tbSelect(query, params)
 
     return jsonify(posts)
 
@@ -285,12 +296,38 @@ def boardListPage():
     query = """
         SELECT COUNT(*) AS total_posts
         FROM tb_board
-        WHERE category_id = %s
     """
-    result = tbSelect(query, (category_id,))
+    params = []
+    
+    # category_id가 있을 경우에만 WHERE 절 추가
+    if category_id != '0':
+        query += " WHERE category_id = %s"
+        params.append(category_id)
+    
+    # tbSelect 함수 호출
+    result = tbSelect(query, params)
 
     return jsonify(result)
 
+
+@app.route('/boardPostting',methods=['POST'])
+def boardPostting():
+    data = request.json
+    content = data.get('content')
+    title = data.get('title')
+    category_id = data.get('category')
+    user_id = data.get('user_id')
+
+    if not content or not title or not category_id or not user_id:
+        return jsonify({'status': 'error', 'message': 'content, title, category_id, user_id required'}), 400
+
+    query = """
+        INSERT INTO tb_board (category_id, title, content, user_id) VALUES (%s, %s, %s, %s)
+    """
+
+    response = tbInsert(query, (category_id, title, content, user_id))
+
+    return jsonify(response)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=3000)
