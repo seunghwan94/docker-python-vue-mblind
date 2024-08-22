@@ -12,37 +12,43 @@
           {{ value }}
         </button>
       </div>
-      <!-- 글쓰기 -->
-      <BoardWrite v-if="postting" :categories="categories" :BackURL="BackURL"/>
-      <div v-else> 
-        <!-- 게시판 목록 -->
-        <BoardList :posts="posts" :selectedCategory="selectedCategory"/>
+      <!-- 게시판 목록 -->
+      <div v-if="status == 'BoardList'"> 
+        <BoardList :posts="posts" :selectedCategory="selectedCategory" @SelectPost="SelectPost"/>
         <div class="d-flex justify-content-end">
-          <button type="button" class="btn btn-outline-primary m-2" @click="postting=true">글쓰기</button>
+          <button type="button" class="btn btn-outline-primary m-2" @click="startWriting">글쓰기</button>
         </div>
-        <!-- 페이징 -->
         <Pagintion :totalPosts="totalPosts" :currentPage="currentPage" :perPage="perPage" @updatePage="updatePage"/>
       </div>
+      <!-- 게시판 보기 -->
+      <BoardView v-else-if="status == 'BoardView'" :selectBoard="selectBoard" @SelectPost="SelectPost"/> 
+      <!-- 글쓰기 -->
+      <BoardWrite v-else-if="status == 'BoardWrite'" :categories="categories" :BackURL="BackURL" :selectBoard="selectBoard"/>
     </div>
   </template>
   
   <script>
   import axios from 'axios';
   import BoardList from './BoardList.vue';
+  import BoardView from './BoardView.vue';
   import BoardWrite from './BoardWrite.vue';
   import Pagintion from '../Pagintion.vue';
   
   export default {
     data() {
       return {
-        selectedCategory: '1',
-        categories: {},
-        posts: [],
+        user_id: sessionStorage.getItem('user_id'),
+        posts: [],              // 게시글
+        status: 'BoardList',    // 상태관리
+        BackURL: this.$BackURL, // 글쓰기할때 setup 사용( this 작동 안함 )
+        selectBoard: '',        // 게시글 선택
+        // 페이징
         totalPosts: 0,
         currentPage: 1,
         perPage: 10,
-        postting: false,
-        BackURL: this.$BackURL
+        // 카테고리 목록 및 선택
+        categories: {},
+        selectedCategory: '1',  
       }
     },
     created() {
@@ -73,6 +79,19 @@
           }
         } catch (error) {
           console.error('Error fetching categories:', error);
+        }
+      },
+      async BoardViewCount(board_id) {
+        try {
+          const response = await axios.get(`${this.$BackURL}/boardViewCnt`, {
+            params: {
+              user_id: this.user_id,
+              board_id: board_id
+            }
+          });
+          console.log('Response status:', response.data.status);
+        } catch (error) {
+          console.error('Error fetching board view count:', error);
         }
       },
       async fetchPosts(page = this.currentPage) {
@@ -116,20 +135,35 @@
       selectCategory(key) {
         this.selectedCategory = key;
         this.currentPage = 1; // Reset to the first page when category changes
-        this.postting = false;
+        this.status = 'BoardList';
         this.fetchPosts();
       },
       updatePage(page) {
         this.currentPage = page;
         this.fetchPosts(page);
       },
-      setActiveTab(tab) {
-        // Implement tab switching logic if needed
-        console.log('Tab switched to:', tab);
-      }
+      startWriting() {
+        this.selectBoard = ''; // selectBoard를 공백으로 초기화
+        this.changeStatus('BoardWrite'); // 상태 변경
+      },
+      SelectPost(board_id,edit=false){
+        const SelectBoardPost = this.posts.find(board => board.board_id === board_id);
+        this.selectBoard = SelectBoardPost;
+
+        if (edit){
+          this.changeStatus('BoardWrite');
+        }else{
+          this.BoardViewCount(board_id);
+          this.changeStatus('BoardView');
+        }
+      },
+      changeStatus(target){
+        this.status = target;
+      },
     },
     components: {
       BoardList,
+      BoardView,
       BoardWrite,
       Pagintion,
     }

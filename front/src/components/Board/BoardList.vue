@@ -43,11 +43,14 @@
         type: Array,
         default: () => []
       },
+      selectedCategory: String,
+      
     },
     methods: {
       postSelect(postId) {
         // Handle post selection
-        console.log('Post selected:', postId);
+        console.log(postId);
+        this.$emit('SelectPost',postId);
       },
       stripHtml(html) {
         let doc = new DOMParser().parseFromString(html, 'text/html');

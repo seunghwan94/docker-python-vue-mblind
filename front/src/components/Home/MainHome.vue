@@ -1,6 +1,6 @@
 <template>
-    <div class="card border-light m-3" style="background-color: gray;height: 400px;">
-      이미지 넣을 자리
+    <div class="card border-light m-3" style=" height: 400px;">
+      <div class="image-div"></div>
     </div>
     <div class="card border-primary m-3" >
       <div class="card-header">오늘의 토픽</div>
@@ -44,5 +44,13 @@
 
 </script>
 <style>
-
+.image-div {
+  width: 100%;
+  height: 100%;
+  border-radius: 5px;
+  background-image: url('../../assets/img/Logo2.png'); /* 이미지 경로 설정 */
+  background-size: cover; /* 이미지가 div를 꽉 채우도록 설정 */
+  background-position: center; /* 이미지의 중앙을 기준으로 배치 */
+  background-repeat: no-repeat; /* 이미지 반복 방지 */
+}
 </style>

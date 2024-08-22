@@ -235,9 +235,10 @@ def boardList():
             p.content,
             p.create_date AS create_date,
             p.update_date AS update_date,
+            c.id as category_id,
             c.name AS category_name,
             u.id AS user_id,
-            u.user_id AS user_username,
+            u.name AS user_username,
             COALESCE(view_count.view_count, 0) AS view_count,
             COALESCE(comment_counts.comment_count, 0) AS comment_count
         FROM
@@ -267,17 +268,18 @@ def boardList():
             GROUP BY
                 board_id
         ) comment_counts ON p.id = comment_counts.board_id
+        where p.is_set='Y'
     """
     
     params = []
     
     # category_id가 있을 경우에만 WHERE 절 추가
     if category_id != '0':
-        query += " WHERE p.category_id = %s"
+        query += " And p.category_id = %s"
         params.append(category_id)
     
     # 페이징을 위한 LIMIT 및 OFFSET 추가
-    query += " LIMIT %s OFFSET %s"
+    query += " order by create_date desc LIMIT %s OFFSET %s"
     offset = (page - 1) * per_page
     params.extend([per_page, offset])
     
@@ -296,12 +298,13 @@ def boardListPage():
     query = """
         SELECT COUNT(*) AS total_posts
         FROM tb_board
+        where is_set='Y'
     """
     params = []
     
     # category_id가 있을 경우에만 WHERE 절 추가
     if category_id != '0':
-        query += " WHERE category_id = %s"
+        query += " And category_id = %s"
         params.append(category_id)
     
     # tbSelect 함수 호출
@@ -328,6 +331,140 @@ def boardPostting():
     response = tbInsert(query, (category_id, title, content, user_id))
 
     return jsonify(response)
+
+@app.route('/boardPosttingEdit',methods=['POST'])
+def boardPosttingEdit():
+    data = request.json
+    board_id = data.get('board_id')
+    content = data.get('content')
+    title = data.get('title')
+    category_id = data.get('category')
+    user_id = data.get('user_id')
+
+    if not content or not title or not category_id or not user_id:
+        return jsonify({'status': 'error', 'message': 'content, title, category_id, user_id required'}), 400
+
+    query = """
+        update tb_board set 
+            category_id = %s, 
+            title = %s,
+            content = %s, 
+            user_id = %s
+        where id = %s
+    """
+
+    response = tbInsert(query, (category_id, title, content, user_id, board_id))
+
+    return jsonify(response)
+
+@app.route('/boardViewCnt',methods=['GET'])
+def boardViewCnt():
+    board_id = request.args.get('board_id')
+    user_id = request.args.get('user_id')
+
+    if not board_id or not user_id :
+        return jsonify({'status': 'error', 'message': 'board_id, user_id required'}), 400
+
+    query = """
+        INSERT INTO tb_board_view (board_id, user_id ) VALUES (%s, %s)
+    """
+    response = tbInsert(query, (board_id, user_id))
+
+    return jsonify(response)
+
+
+@app.route('/commentList', methods=['GET'])
+def commentList():
+    board_id = request.args.get('board_id')
+
+    if not board_id:
+        return jsonify({'status': 'error', 'message': 'board_id required'}), 400
+
+    query = """
+        SELECT 
+                m.id,
+                m.user_id,
+                m.content,
+                m.create_date,
+                u.name,
+                u.img
+        FROM tb_board_comment m
+        JOIN tb_user u ON m.user_id = u.id
+        WHERE m.board_id = %s 
+            AND m.is_set = 'Y'
+        order BY m.create_date
+    """
+    # tbSelect 함수 호출
+    result = tbSelect(query, (board_id,))
+
+    return jsonify(result)
+
+@app.route('/commentAdd',methods=['GET'])
+def commentAdd():
+    board_id = request.args.get('board_id')
+    user_id = request.args.get('user_id')
+    comment = request.args.get('comment')
+
+    if not board_id or not user_id or not comment:
+        return jsonify({'status': 'error', 'message': 'board_id, user_id, comment required'}), 400
+
+    query = """
+        INSERT INTO tb_board_comment (board_id, user_id, content ) VALUES (%s, %s, %s)
+    """
+    # tbInsert 함수 호출
+    result = tbInsert(query, (board_id, user_id, comment))
+
+    return jsonify(result)
+
+  
+@app.route('/commentDelete', methods=['POST'])
+def commentDelete():
+    data = request.json
+    comment_id = data.get('comment_id')
+
+    if not comment_id:
+        return jsonify({'status': 'error', 'message': 'comment_id required'}), 400
+
+    query = """
+        update tb_board_comment set is_set = 'N', update_date = NOW() where id = %s
+    """
+    # tbInsert 함수 호출
+    result = tbInsert(query, (comment_id,))
+
+    return jsonify(result)
+
+@app.route('/saveCommentEdit', methods=['POST'])
+def saveCommentEdit():
+    data = request.json
+    comment_id = data.get('comment_id')
+    comment = data.get('content')
+
+    if not comment_id or not comment:
+        return jsonify({'status': 'error', 'message': 'comment_id, comment required'}), 400
+
+    query = """
+        update tb_board_comment set content = %s, update_date = NOW() where id = %s
+    """
+    # tbInsert 함수 호출
+    result = tbInsert(query, (comment, comment_id,))
+
+    return jsonify(result)
+
+@app.route('/deleteBoard', methods=['POST'])
+def deleteBoard():
+    data = request.json
+    board_id = data.get('board_id')
+
+    if not board_id:
+        return jsonify({'status': 'error', 'message': 'board_id required'}), 400
+
+    query = """
+        update tb_board set is_set = 'N', update_date = NOW() where id = %s
+    """
+    # tbInsert 함수 호출
+    result = tbInsert(query, (board_id,))
+
+    return jsonify(result)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=3000)

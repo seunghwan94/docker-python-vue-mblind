@@ -5,6 +5,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 
 const app = createApp(App);
 
-app.config.globalProperties.$BackURL = 'http://localhost:3000/';
+app.config.globalProperties.$BackURL = 'http://localhost:3000';
+app.config.globalProperties.$FrontURL = 'http://localhost:8080';
 
 app.use(router).mount('#app');
