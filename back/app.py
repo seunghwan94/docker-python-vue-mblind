@@ -65,7 +65,10 @@ def tbInsert(query, params):
         cursor = connection.cursor()
         cursor.execute(query, params)
         connection.commit()
-        return {'status': 'success'}
+
+        inserted_id = cursor.lastrowid
+
+        return {'status': 'success', 'inserted_id': inserted_id}
 
     except Error as e:
         print(f"Error: {e}")
@@ -78,10 +81,115 @@ def tbInsert(query, params):
         if connection is not None:
             connection.close()
 
-@app.route('/Theme', methods=['GET'])
-def Theme():
-    query = "SELECT * FROM tb_Theme WHERE theme = 'Minty'"
+@app.route('/themeList', methods=['POST'])
+def themeList():
+    query = """
+        SELECT theme
+        FROM tb_theme
+        order by id
+    """
     response = tbSelect(query)
+    return jsonify(response)  # 반환 값을 JSON으로 변환하여 반환
+
+@app.route('/Theme', methods=['POST'])
+def Theme():
+    data = request.json
+    user_id_temp = data.get('user_id')
+
+    query = """
+        SELECT t.url
+        FROM tb_user_detail d
+        LEFT JOIN tb_theme t ON d.theme_id = t.id
+        where user_id = %s
+    """
+
+    if not user_id_temp:
+        user_id = 10
+        query = """
+            SELECT url
+            FROM tb_theme
+            where id = %s
+        """
+    else:
+        user_id = user_id_temp
+        query = """
+            SELECT t.url
+            FROM tb_user_detail d
+            LEFT JOIN tb_theme t ON d.theme_id = t.id
+            where user_id = %s
+        """
+
+    response = tbSelect(query,(user_id,))
+    return jsonify(response)  # 반환 값을 JSON으로 변환하여 반환
+
+@app.route('/selectTheme', methods=['POST'])
+def selectTheme():
+    data = request.json
+    user_id = data.get('user_id')
+    theme_id = data.get('theme_id')
+
+    if not user_id or not theme_id:
+        return jsonify({'status': 'error', 'message': 'theme_id, user_id required'}), 400
+
+    query = "UPDATE tb_user_detail set theme_id = %s where user_id = %s"
+    response = tbInsert(query, (theme_id, user_id))
+    
+    return jsonify(response)
+
+@app.route('/userList', methods=['GET'])
+def userList():
+
+    page = int(request.args.get('page', 1))  # 기본값으로 페이지 1
+    per_page = int(request.args.get('per_page', 10))  # 기본값으로 페이지당 10개 게시글
+
+    query = """
+        SELECT * 
+        FROM tb_user u, tb_user_detail d 
+        WHERE u.id = d.user_id
+    """
+    params = []
+    
+    # 페이징을 위한 LIMIT 및 OFFSET 추가
+    query += " order by u.id desc LIMIT %s OFFSET %s"
+    offset = (page - 1) * per_page
+    params.extend([per_page, offset])
+    
+    # tbSelect 함수 호출
+    response = tbSelect(query, params)
+
+    return jsonify(response)
+
+
+@app.route('/userListPage', methods=['GET'])
+def userListPage():
+    query = """
+        SELECT COUNT(*) AS total_photos
+        FROM tb_user u, tb_user_detail d 
+        WHERE u.id = d.user_id
+    """
+
+    # tbSelect 함수 호출
+    result = tbSelect(query)
+
+    return jsonify(result)
+
+
+
+@app.route('/profileLoad', methods=['POST'])
+def profileLoad():
+    data = request.json
+    user_id = data.get('user_id')
+
+    if not user_id:
+        return jsonify({'status': 'error', 'message': 'user_id required'}), 400
+
+    query = """
+        SELECT * 
+        FROM tb_user u, tb_user_detail d 
+        WHERE u.id = d.user_id
+        AND u.id =  %s
+    """
+    response = tbSelect(query,(user_id,))
     return jsonify(response)  # 반환 값을 JSON으로 변환하여 반환
 
 @app.route('/login', methods=['POST'])
@@ -124,6 +232,9 @@ def signUp():
         # Insert new user
         query = "INSERT INTO tb_user (user_id, user_pw, name ) VALUES (%s, %s, %s)"
         response = tbInsert(query, (user_id, user_pw, user_name))
+
+        query = "INSERT INTO tb_user_detail (user_id ) VALUES (%s)"
+        response = tbInsert(query, (response['inserted_id'],))
     
     return jsonify(response)
 
@@ -186,13 +297,36 @@ def profileChange():
     img_name = data.get('img_name')
     user_id = data.get('user_id')
     name = data.get('user_name')
-
+    birth = data.get('user_birth')
+    gender = data.get('user_gender')
+    addr = data.get('user_addr')
+    intro = data.get('user_intro')
 
     if not img_name:
         return jsonify({'status': 'error', 'message': 'img_name required'}), 400
 
-    query = "UPDATE tb_user set img = %s, name = %s where user_id = %s"
-    response = tbInsert(query, (img_name, name, user_id))
+    # 첫 번째 쿼리 (tb_user 테이블 업데이트)
+    query1 = "UPDATE tb_user SET img = %s, name = %s WHERE id = %s"
+    # 두 번째 쿼리 (tb_user_detail 테이블 업데이트)
+    query2 = "UPDATE tb_user_detail SET birth = %s, gender = %s, addr = %s, intro = %s WHERE user_id = %s"
+
+    try:
+        # 첫 번째 쿼리 실행
+        response1 = tbInsert(query1, (img_name, name, user_id))
+        
+        # 두 번째 쿼리 실행
+        response2 = tbInsert(query2, (birth, gender, addr, intro, user_id))
+        
+        # 응답 반환
+        if response1['status'] == 'success' and response2['status'] == 'success':
+            return jsonify({'status': 'success'})
+        else:
+            return jsonify({'status': 'error', 'message': 'Update failed'})
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'status': 'error', 'message': 'Update failed', 'details': str(e)}), 500
+
     
     return jsonify(response)
 
@@ -465,6 +599,10 @@ def deleteBoard():
     result = tbInsert(query, (board_id,))
 
     return jsonify(result)
+
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=3000)

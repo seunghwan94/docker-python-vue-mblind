@@ -54,11 +54,11 @@ export default {
       this.modalStatus = true;
     },
     async loadTheme() {
-      console.log(this.$BackURL)
       try {
-        const response = await axios.get(`${this.$BackURL}/Theme`);
+        const response = await axios.post(`${this.$BackURL}/Theme`,{
+          user_id : this.user_id,
+        });
         const data = response.data;
-
         if (data.status === 'success') {
           this.updateTheme(data.res[0].url);
         } else {

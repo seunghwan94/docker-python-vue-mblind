@@ -2,12 +2,13 @@ import { createWebHistory, createRouter } from "vue-router";
 
 import Home from './components/Home/MainHome.vue';
 import Board from './components/Board/MainBoard.vue';
+import Photo from './components/Photo/MainPhoto.vue';
 
 const routes = [
     { path: '/', component: Home },
     { path: '/home', component: Home },
     { path: '/board', component: Board },
-    // { path: '/photo', component: Photo },
+    { path: '/photo', component: Photo },
     // { path: '/chatting', component: Chatting },
   ];
 
