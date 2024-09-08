@@ -14,10 +14,7 @@
             <a class="nav-link" :class="{ active: MainMenu === 'board' }" href="#" @click.prevent="navigateTo('board')">게시판</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" :class="{ active: MainMenu === 'photo' }" href="#" @click.prevent="navigateTo('photo')">사진첩</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" :class="{ active: MainMenu === 'chatting' }" href="#" @click.prevent="navigateTo('chatting')">채팅</a>
+            <a class="nav-link" :class="{ active: MainMenu === 'photo' }" href="#" @click.prevent="navigateTo('photo')">유저목록</a>
           </li>
         </ul>
         <div class="d-flex" style="margin: 10px 0 ">
@@ -42,6 +39,11 @@ export default {
   },
   methods: {
     navigateTo(tab) {
+      if(!this.user_id && tab == 'board'){
+        alert("로그인이 필요한 메뉴입니다.")
+        return;
+      }
+
       this.$router.push(`/${tab}`);
       this.$emit('updateMainMenu', tab);
     }

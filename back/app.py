@@ -81,6 +81,7 @@ def tbInsert(query, params):
         if connection is not None:
             connection.close()
 
+# Theme 목록
 @app.route('/themeList', methods=['POST'])
 def themeList():
     query = """
@@ -91,6 +92,7 @@ def themeList():
     response = tbSelect(query)
     return jsonify(response)  # 반환 값을 JSON으로 변환하여 반환
 
+# Theme 적용
 @app.route('/Theme', methods=['POST'])
 def Theme():
     data = request.json
@@ -122,6 +124,7 @@ def Theme():
     response = tbSelect(query,(user_id,))
     return jsonify(response)  # 반환 값을 JSON으로 변환하여 반환
 
+# User 마다 Theme 셋팅
 @app.route('/selectTheme', methods=['POST'])
 def selectTheme():
     data = request.json
@@ -601,8 +604,53 @@ def deleteBoard():
     return jsonify(result)
 
 
+@app.route('/Best', methods=['POST'])
+def Best():
+    query = '''SELECT 	b.id,
+                        b.title,
+                        b.create_date,
+                        u.name,
+                        u.img,
+                        c.name as category_name,
+                        (SELECT COUNT(*) 
+                        FROM tb_board_view v 
+                        WHERE b.id = v.board_id) AS view_cnt,
+                        (SELECT COUNT(*) 
+                        FROM tb_board_comment cm 
+                        WHERE b.id = cm.board_id) AS comment_cnt
+            FROM tb_board b
+            LEFT JOIN tb_user u ON b.user_id = u.id
+            LEFT JOIN tb_board_category c ON b.category_id = c.id 
+            ORDER BY view_cnt DESC LIMIT 5;
+            '''
+    response = tbSelect(query)
+    print(response)
+    return jsonify(response)
 
-
+@app.route('/todayBest', methods=['POST'])
+def todayBest():
+    query = '''SELECT 	b.id,
+                        b.title,
+                        b.create_date,
+                        u.name,
+                        u.img,
+                        c.name as category_name,
+                        (SELECT COUNT(*) 
+                        FROM tb_board_view v 
+                        WHERE b.id = v.board_id) AS view_cnt,
+                        (SELECT COUNT(*) 
+                        FROM tb_board_comment cm 
+                        WHERE b.id = cm.board_id) AS comment_cnt
+            FROM tb_board b
+            LEFT JOIN tb_user u ON b.user_id = u.id
+            LEFT JOIN tb_board_category c ON b.category_id = c.id 
+            WHERE DATE(b.create_date) = "2024-08-21"
+            ORDER BY view_cnt DESC LIMIT 5;
+            ;
+            '''
+    response = tbSelect(query)
+    print(response)
+    return jsonify(response)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=3000)
