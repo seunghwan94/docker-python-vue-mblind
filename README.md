@@ -1,24 +1,37 @@
-# front
+# mlind
+커뮤니티 사이트 제작
+```
+Server : Docker (Linux)
+DB     : mriaDB
+Back   : python (Flask)
+Front  : vue (Bootstrap)
+```
+[Server Setting 가이드](https://gentle-chokeberry-d27.notion.site/Docker-centos7-python-nodejs-7f567599ee8c49418dfdf71c6c6c3d6f).
 
-## Project setup
-```
-npm install
-```
 
-### Compiles and hot-reloads for development
+### DB 구조 load
 ```
-npm run serve
-```
-
-### Compiles and minifies for production
-```
-npm run build
-```
-
-### Lints and fixes files
-```
-npm run lint
+mysql -u mlind -p mlind < mlind.sql
 ```
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+### Back Server 실행 
+back 폴더 접속 후 
+```
+// 가상환경 접속
+source .venv/bin/activate
+
+// Flask 실행
+python app.py
+
+// 가상환경 나가는 방법
+deactivate
+```
+
+### Front Server 실행
+front 폴더 접속 후
+```
+// debug 모드
+npm run serve 
+```
+
+localhost:8080 접속
