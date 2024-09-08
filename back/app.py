@@ -6,7 +6,7 @@ from PIL import Image
 import os
 
 app = Flask(__name__)
-CORS(app)
+CORS(app) 
 
 # MariaDB 데이터베이스 연결 설정
 def get_db_connection():
